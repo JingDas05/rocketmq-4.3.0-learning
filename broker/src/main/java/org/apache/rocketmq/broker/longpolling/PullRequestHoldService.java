@@ -63,11 +63,13 @@ public class PullRequestHoldService extends ServiceThread {
         return sb.toString();
     }
 
+    // 服务端长轮询方法，Brokder HOLD住客户端过来的请求一小段时间，如果有新消息，立刻给Consumer
     @Override
     public void run() {
         log.info("{} service started", this.getServiceName());
         while (!this.isStopped()) {
             try {
+                // 默认等待5秒钟
                 if (this.brokerController.getBrokerConfig().isLongPollingEnable()) {
                     this.waitForRunning(5 * 1000);
                 } else {
