@@ -54,6 +54,7 @@ public class ResponseFuture {
     public void executeInvokeCallback() {
         if (invokeCallback != null) {
             if (this.executeCallbackOnlyOnce.compareAndSet(false, true)) {
+                // 定时调用回调方法
                 invokeCallback.operationComplete(this);
             }
         }

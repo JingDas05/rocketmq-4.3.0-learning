@@ -34,7 +34,6 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
-
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.security.cert.CertificateException;
@@ -54,7 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.rocketmq.remoting.ChannelEventListener;
 import org.apache.rocketmq.remoting.InvokeCallback;
 import org.apache.rocketmq.remoting.RPCHook;
@@ -109,6 +107,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         this.nettyClientConfig = nettyClientConfig;
         this.channelEventListener = channelEventListener;
 
+        // 初始化执行用户回调函数的 线程数 以及 线程池
         int publicThreadNums = nettyClientConfig.getClientCallbackExecutorThreads();
         if (publicThreadNums <= 0) {
             publicThreadNums = 4;
@@ -185,14 +184,20 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         }
                         pipeline.addLast(
                                 defaultEventExecutorGroup,
+                                // 编码handler
                                 new NettyEncoder(),
+                                // 解码handler
                                 new NettyDecoder(),
+                                // 心跳检测
                                 new IdleStateHandler(0, 0, nettyClientConfig.getClientChannelMaxIdleTimeSeconds()),
+                                // 连接管理handler,处理connect, disconnect, close等事件
                                 new NettyConnectManageHandler(),
+                                // 处理接收到RemotingCommand消息后的事件, 收到服务器端响应后的相关操作
                                 new NettyClientHandler());
                     }
                 });
 
+        // 定时扫描responseTable,获取返回结果,并且处理超时
         this.timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -261,7 +266,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                         removeItemFromTable = false;
                     } else if (prevCW.getChannel() != channel) {
                         log.info("closeChannel: the channel[{}] has been closed before, and has been created again, nothing to do.",
-                                addrRemote);
+                            addrRemote);
                         removeItemFromTable = false;
                     }
 
@@ -360,11 +365,12 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
     }
 
+    // 执行同步调用的具体逻辑
     @Override
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
-            throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
+        throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
         long beginStartTime = System.currentTimeMillis();
-        // 根据addr获得channel
+        //根据addr获得channel
         final Channel channel = this.getAndCreateChannel(addr);
         if (channel != null && channel.isActive()) {
             try {
@@ -650,7 +656,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     class NettyConnectManageHandler extends ChannelDuplexHandler {
         @Override
         public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
-                            ChannelPromise promise) throws Exception {
+            ChannelPromise promise) throws Exception {
             final String local = localAddress == null ? "UNKNOWN" : RemotingHelper.parseSocketAddressAddr(localAddress);
             final String remote = remoteAddress == null ? "UNKNOWN" : RemotingHelper.parseSocketAddressAddr(remoteAddress);
             log.info("NETTY CLIENT PIPELINE: CONNECT  {} => {}", local, remote);
