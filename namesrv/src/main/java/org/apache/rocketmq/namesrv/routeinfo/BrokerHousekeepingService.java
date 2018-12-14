@@ -23,6 +23,14 @@ import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.ChannelEventListener;
 
+/**
+ *
+ * BrokerHousekeepingService实现了ChannelEventListener接口, 并且{@link org.apache.rocketmq.remoting.netty.NettyRemotingServer} 启动时会启动BrokerHousekeepingService
+ *
+ *RocketMQ使用BrokerHouseKeepingService来处理broker是否存活. 如果broker失效, 异常或者关闭, 则将broker从RouteInfoManager路由信息中移除,
+ * 同时将与该broker相关的topic信息也一起删除. Netty服务端专门启动了一个线程用于监听管道的失效, 异常或者关闭等的事件队列, 当事件队列里面有新事件时, 则取出事件并判断事件的类型, 然后调用BrokerHouseKeepingService对应的方法来处理该事件.
+ *
+ * */
 public class BrokerHousekeepingService implements ChannelEventListener {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private final NamesrvController namesrvController;
