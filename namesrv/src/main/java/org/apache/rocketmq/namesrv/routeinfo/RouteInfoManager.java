@@ -50,6 +50,7 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 public class RouteInfoManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
+    // 读写锁
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
@@ -442,6 +443,7 @@ public class RouteInfoManager {
     }
 
     public void onChannelDestroy(String remoteAddr, Channel channel) {
+        // 获取 brokerAddrFound 以brokerLiveTable优先，其次为remoteAddr
         String brokerAddrFound = null;
         if (channel != null) {
             try {
@@ -475,10 +477,12 @@ public class RouteInfoManager {
             try {
                 try {
                     this.lock.writeLock().lockInterruptibly();
+                    // 移除
                     this.brokerLiveTable.remove(brokerAddrFound);
                     this.filterServerTable.remove(brokerAddrFound);
                     String brokerNameFound = null;
                     boolean removeBrokerName = false;
+                    // brokerAddrTable 移除 brokerAddrFound
                     Iterator<Entry<String, BrokerData>> itBrokerAddrTable =
                             this.brokerAddrTable.entrySet().iterator();
                     while (itBrokerAddrTable.hasNext() && (null == brokerNameFound)) {
@@ -498,6 +502,7 @@ public class RouteInfoManager {
                             }
                         }
 
+                        // 如果 brokerData.getBrokerAddrs() 为空，移除掉
                         if (brokerData.getBrokerAddrs().isEmpty()) {
                             removeBrokerName = true;
                             itBrokerAddrTable.remove();
@@ -506,6 +511,7 @@ public class RouteInfoManager {
                         }
                     }
 
+                    // clusterAddrTable 中移除掉 brokerNameFound
                     if (brokerNameFound != null && removeBrokerName) {
                         Iterator<Entry<String, Set<String>>> it = this.clusterAddrTable.entrySet().iterator();
                         while (it.hasNext()) {
@@ -528,6 +534,7 @@ public class RouteInfoManager {
                         }
                     }
 
+                    // 将topic中 channel包含broker的删除掉
                     if (removeBrokerName) {
                         Iterator<Entry<String, List<QueueData>>> itTopicQueueTable =
                                 this.topicQueueTable.entrySet().iterator();
