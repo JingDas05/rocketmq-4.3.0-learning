@@ -236,7 +236,10 @@ public class MQClientInstance {
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
                     this.startScheduledTask();
-                    // **核心** Start pull service,PullMessageService 中的 start()是消费信息的核心
+                    /**
+                     * **核心**
+                     * {@link PullMessageService#run()}
+                     */
                     this.pullMessageService.start();
                     // Start rebalance service
                     this.rebalanceService.start();
