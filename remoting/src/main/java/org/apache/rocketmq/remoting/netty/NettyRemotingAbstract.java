@@ -186,7 +186,7 @@ public abstract class NettyRemotingAbstract {
                         if (rpcHook != null) {
                             rpcHook.doBeforeRequest(RemotingHelper.parseChannelRemoteAddr(ctx.channel()), cmd);
                         }
-                        // 核心逻辑： 这个地方需要看下 NettyRequestProcessor 的具体实现类
+                        // **核心**这个地方需要看下 NettyRequestProcessor 的具体实现类
                         // 对于 broker 处理消息，就是 SendMessageProcessor
                         final RemotingCommand response = pair.getObject1().processRequest(ctx, cmd);
                         if (rpcHook != null) {

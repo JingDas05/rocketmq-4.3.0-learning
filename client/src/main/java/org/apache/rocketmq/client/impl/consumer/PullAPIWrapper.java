@@ -199,6 +199,7 @@ public class PullAPIWrapper {
                 brokerAddr = computPullFromWhichFilterServer(mq.getTopic(), brokerAddr);
             }
 
+            // 消费信息核心类
             PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(
                     brokerAddr,
                     requestHeader,
