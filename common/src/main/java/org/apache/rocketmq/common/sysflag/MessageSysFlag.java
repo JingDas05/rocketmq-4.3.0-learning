@@ -24,6 +24,7 @@ public class MessageSysFlag {
     public final static int TRANSACTION_COMMIT_TYPE = 0x2 << 2;
     public final static int TRANSACTION_ROLLBACK_TYPE = 0x3 << 2;
 
+    // 位操作？
     public static int getTransactionValue(final int flag) {
         return flag & TRANSACTION_ROLLBACK_TYPE;
     }

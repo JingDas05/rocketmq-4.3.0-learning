@@ -43,6 +43,11 @@ import org.apache.rocketmq.store.config.FlushDiskType;
 import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * RocketMQ提供两种数据落盘的方式: 一种是直接将数据写到映射文件字节缓冲区(mappedByteBuffer), 映射文件字节缓冲区(mappedByteBuffer)flush;
+ * 另一种是先写到writeBuffer, 再从内存字节缓冲区(write buffer)提交(commit)到文件通道(fileChannel), 然后文件通道(fileChannel)flush.
+ * <p>
+ */
 public class MappedFile extends ReferenceResource {
     public static final int OS_PAGE_SIZE = 1024 * 4;
     protected static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
@@ -50,10 +55,12 @@ public class MappedFile extends ReferenceResource {
     private static final AtomicLong TOTAL_MAPPED_VIRTUAL_MEMORY = new AtomicLong(0);
 
     private static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
+    // 当前写到哪个位置
     protected final AtomicInteger wrotePosition = new AtomicInteger(0);
     //ADD BY ChenYang
     protected final AtomicInteger committedPosition = new AtomicInteger(0);
     private final AtomicInteger flushedPosition = new AtomicInteger(0);
+    // 文件尺寸
     protected int fileSize;
     protected FileChannel fileChannel;
     /**
@@ -62,6 +69,9 @@ public class MappedFile extends ReferenceResource {
     protected ByteBuffer writeBuffer = null;
     protected TransientStorePool transientStorePool = null;
     private String fileName;
+    // fileFromOffset: 映射的起始偏移量, consumequeue文件夹下面是learnTopic文件夹，下面是子队列的文件夹为0， 1， 2， 3
+    // 假如里面的第一个文件名为00000000000000000000,第二个文件名为00000000000000001024,
+    // 那么第一个文件的fileFromOffset就是0,第二个文件的fileFromOffset就是1024
     private long fileFromOffset;
     private File file;
     private MappedByteBuffer mappedByteBuffer;
@@ -208,7 +218,7 @@ public class MappedFile extends ReferenceResource {
         int currentPos = this.wrotePosition.get();
 
         if (currentPos < this.fileSize) {
-            //获取需要写入的字节缓冲区, 之所以会有writeBuffer != null的判断与使用的刷盘服务有关.
+            // 缓冲区分片
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
             byteBuffer.position(currentPos);
             AppendMessageResult result = null;
@@ -384,7 +394,9 @@ public class MappedFile extends ReferenceResource {
         return this.fileSize == this.wrotePosition.get();
     }
 
+    // 返回从pos到 pos + size的内存映射
     public SelectMappedBufferResult selectMappedBuffer(int pos, int size) {
+        // 获取当前有效的最大位置
         int readPosition = getReadPosition();
         if ((pos + size) <= readPosition) {
 

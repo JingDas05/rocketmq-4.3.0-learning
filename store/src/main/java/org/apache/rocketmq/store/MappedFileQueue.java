@@ -30,6 +30,9 @@ import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 
+/**
+ * 文件的名字是文件大小的偏移量，所以可以根据名字计算是哪个文件
+ */
 public class MappedFileQueue {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private static final InternalLogger LOG_ERROR = InternalLoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
@@ -38,13 +41,12 @@ public class MappedFileQueue {
 
     // 文件队列的存储路径
     private final String storePath;
-
+    // 文件的大小
     private final int mappedFileSize;
 
-    // TODO: 2018/12/16 查看 CopyOnWriteArrayList源码
-    // 存储MappedFile的map
+    // 存储MappedFile的数据结构
     private final CopyOnWriteArrayList<MappedFile> mappedFiles = new CopyOnWriteArrayList<MappedFile>();
-
+    // 分配MappedFile的服务
     private final AllocateMappedFileService allocateMappedFileService;
 
     // 已经刷到磁盘的位置
@@ -200,18 +202,24 @@ public class MappedFileQueue {
     // 获取队列中最后一个MappedFile对象
     public MappedFile getLastMappedFile(final long startOffset, boolean needCreate) {
         long createOffset = -1;
+        // 获取队列中的最后一个对象
         MappedFile mappedFileLast = getLastMappedFile();
 
         if (mappedFileLast == null) {
+            // 如果文件为空，计算要创建的新文件的偏移量
             createOffset = startOffset - (startOffset % this.mappedFileSize);
         }
 
         if (mappedFileLast != null && mappedFileLast.isFull()) {
+            // 如果文件满了，计算也要创建的新文件的偏移量
             createOffset = mappedFileLast.getFileFromOffset() + this.mappedFileSize;
         }
 
+        // 创建新文件
         if (createOffset != -1 && needCreate) {
+            // 计算文件的文件名
             String nextFilePath = this.storePath + File.separator + UtilAll.offset2FileName(createOffset);
+            // 计算下一个文件的文件名
             String nextNextFilePath = this.storePath + File.separator
                     + UtilAll.offset2FileName(createOffset + this.mappedFileSize);
             MappedFile mappedFile = null;
@@ -227,6 +235,7 @@ public class MappedFileQueue {
                 }
             }
 
+            // 将创建好的 mappedFile 添加到mappedFiles中
             if (mappedFile != null) {
                 if (this.mappedFiles.isEmpty()) {
                     mappedFile.setFirstCreateInQueue(true);
@@ -243,6 +252,7 @@ public class MappedFileQueue {
     public MappedFile getLastMappedFile(final long startOffset) {
         return getLastMappedFile(startOffset, true);
     }
+
 
     public MappedFile getLastMappedFile() {
         MappedFile mappedFileLast = null;
@@ -461,7 +471,7 @@ public class MappedFileQueue {
 
     /**
      * Finds a mapped file by offset.
-     * 根据offset/filesize计算该offset所在那个文件中
+     * 根据offset/filesize计算该offset所属的那个文件
      *
      * @param offset                Offset.
      * @param returnFirstOnNotFound If the mapped file is not found, then return the first one.

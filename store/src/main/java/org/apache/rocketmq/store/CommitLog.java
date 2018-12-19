@@ -49,6 +49,7 @@ public class CommitLog {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     // End of file empty MAGIC CODE cbd43194
     private final static int BLANK_MAGIC_CODE = -875286124;
+    // 保存了MappedFile的队列
     private final MappedFileQueue mappedFileQueue;
     private final DefaultMessageStore defaultMessageStore;
     private final FlushCommitLogService flushCommitLogService;
@@ -517,7 +518,7 @@ public class CommitLog {
         return beginTimeInLock;
     }
 
-    // broker 存储信息的实际方法
+    // **核心** broker 存储信息的实际方法
     public PutMessageResult putMessage(final MessageExtBrokerInner msg) {
         // Set the storage time
         // 设置存储时间
@@ -561,6 +562,7 @@ public class CommitLog {
         // 获取 mappedFile
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
 
+        // 获取锁才能进行下一步操作
         putMessageLock.lock(); //spin or ReentrantLock ,depending on store config
         try {
             long beginLockTimestamp = this.defaultMessageStore.getSystemClock().now();
@@ -568,8 +570,10 @@ public class CommitLog {
 
             // Here settings are stored timestamp, in order to ensure an orderly
             // global
+            // 设置存储时间戳
             msg.setStoreTimestamp(beginLockTimestamp);
 
+            // 如果mappedFile不可用，重新获取
             if (null == mappedFile || mappedFile.isFull()) {
                 mappedFile = this.mappedFileQueue.getLastMappedFile(0); // Mark: NewFile may be cause noise
             }
@@ -579,7 +583,7 @@ public class CommitLog {
                 return new PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, null);
             }
 
-            // 添加信息，使用appendMessageCallback进行写入
+            // 添加信息，使用appendMessageCallback进行写入，调用mappedFile的 appendMessage 写入文件
             result = mappedFile.appendMessage(msg, this.appendMessageCallback);
             switch (result.getStatus()) {
                 case PUT_OK:

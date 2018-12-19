@@ -304,13 +304,18 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     // 存储消息的实际执行类
+    // MessageExt [queueId=1, storeSize=0, queueOffset=0, sysFlag=0, bornTimestamp=1545190135496, bornHost=/172.24.224.1:55322,
+    // storeTimestamp=0, storeHost=/172.24.224.1:10911, msgId=null, commitLogOffset=0, bodyCRC=0, reconsumeTimes=0,
+    // preparedTransactionOffset=0, toString()=Message{topic='Afternoon', flag=0,
+    // properties={UNIQ_KEY=AC18E00130E018B4AAC25F2932C70000, WAIT=true, TAGS=lanch},
+    // body=[72, 101, 108, 108, 111, 32, 82, 111, 99, 107, 101, 116, 77, 81, 32, 48], transactionId='null'}]
     public PutMessageResult putMessage(MessageExtBrokerInner msg) {
         if (this.shutdown) {
             log.warn("message store has shutdown, so putMessage is forbidden");
             return new PutMessageResult(PutMessageStatus.SERVICE_NOT_AVAILABLE, null);
         }
 
-        // 从节点禁止消费信息
+        // slave 节点禁止储存信息
         if (BrokerRole.SLAVE == this.messageStoreConfig.getBrokerRole()) {
             long value = this.printTimes.getAndIncrement();
             if ((value % 50000) == 0) {

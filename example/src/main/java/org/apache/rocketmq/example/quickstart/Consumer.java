@@ -33,10 +33,7 @@ public class Consumer {
 
     public static void main(String[] args) throws InterruptedException, MQClientException {
 
-        /*
-         * Instantiate with specified consumer group name.
-         */
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("20181202test");
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("learnGroup");
 
         /*
          * Specify name server addresses.
@@ -55,15 +52,7 @@ public class Consumer {
          */
         consumer.setNamesrvAddr("127.0.0.1:9876");
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET);
-
-        /*
-         * Subscribe one more more topics to consume.
-         */
-        consumer.subscribe("Afternoon", "*");
-
-        /*
-         *  Register callback to execute on arrival of messages fetched from brokers.
-         */
+        consumer.subscribe("learnTopic", "*");
         consumer.registerMessageListener(new MessageListenerConcurrently() {
 
             @Override
@@ -73,12 +62,7 @@ public class Consumer {
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
         });
-
-        /*
-         *  Launch the consumer instance.
-         */
         consumer.start();
-
         System.out.printf("Consumer Started.%n");
     }
 }

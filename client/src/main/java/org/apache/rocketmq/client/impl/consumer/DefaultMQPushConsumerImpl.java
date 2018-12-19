@@ -437,6 +437,16 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 classFilter // class filter
         );
         try {
+            // pullRequest.getMessageQueue() -> MessageQueue [topic=Afternoon, brokerName=dwb-571-00167, queueId=1]
+            // subExpression -> null
+            // subscriptionData.getExpressionType() -> TAG
+            // subscriptionData.getSubVersion() -> 1545113579692
+            // pullRequest.getNextOffset() -> 280
+            // this.defaultMQPushConsumer.getPullBatchSize() -> 32
+            // sysFlag -> 3
+            // commitOffsetValue -> 279
+            // BROKER_SUSPEND_MAX_TIME_MILLIS -> 1000 * 15
+            // CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND -> 1000 * 30
             this.pullAPIWrapper.pullKernelImpl(
                     pullRequest.getMessageQueue(),
                     subExpression,

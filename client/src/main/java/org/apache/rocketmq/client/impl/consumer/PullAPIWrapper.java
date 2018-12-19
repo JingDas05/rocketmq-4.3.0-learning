@@ -140,6 +140,7 @@ public class PullAPIWrapper {
         }
     }
 
+    // **核心**
     public PullResult pullKernelImpl(
             final MessageQueue mq,
             final String subExpression,
@@ -200,6 +201,7 @@ public class PullAPIWrapper {
             }
 
             // 消费信息核心类
+            // brokerAddr -> 172.24.224.1:10911
             PullResult pullResult = this.mQClientFactory.getMQClientAPIImpl().pullMessage(
                     brokerAddr,
                     requestHeader,
