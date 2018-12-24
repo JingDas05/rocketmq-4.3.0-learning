@@ -36,6 +36,10 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.body.ProcessQueueInfo;
 
 /**
+ * pull获得的消息，直接提交到线程池里执行，很难监控和控制
+ * 在PushConsumer运行的时候，每个Message Queue都会有个对应的ProcessQueue对象，保存了这个MessageQueue消息处理状态的快照
+ * <p>
+ * <p>
  * Queue consumption snapshot
  */
 public class ProcessQueue {
@@ -45,7 +49,9 @@ public class ProcessQueue {
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
     private final InternalLogger log = ClientLogger.getLog();
     private final ReadWriteLock lockTreeMap = new ReentrantReadWriteLock();
-    // 消息存储结构
+    // key -> Offset
+    // value -> 消息内容
+    // 保存了所有从MessageQueue获取，但是还没有被处理的消息
     private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<Long, MessageExt>();
     private final AtomicLong msgCount = new AtomicLong();
     private final AtomicLong msgSize = new AtomicLong();

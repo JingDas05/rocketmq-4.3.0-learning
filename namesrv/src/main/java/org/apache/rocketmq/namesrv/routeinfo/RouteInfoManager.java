@@ -52,10 +52,18 @@ public class RouteInfoManager {
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     // 读写锁
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    // key -> topic, value->master brokers（队列的长度等于这个Topic数据存储的Master Broker的个数）,
+    // queueDate contains master broker name, queue num, topicSynFlag etc
     private final HashMap<String/* topic */, List<QueueData>> topicQueueTable;
+    // key -> brokerName value-> brokerData (相同的brokerName可能存在多个机器，一个Master多个Slave，存储了所属Cluster名称
+    // master 和 多个 slave brokers的地址信息)
     private final HashMap<String/* brokerName */, BrokerData> brokerAddrTable;
+    // key ->clusterName value -> brokerNames 一个Cluster名称对应着由BrokerName集合
     private final HashMap<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
+    // key -> brokerAddr broker地址，value-> BrokerLiveInfo存储的内容是这台Broker机器的实时状态（包括上次更新状态的时间
+    // nameServer 会定期检查这个时间戳，超时没有更新就认为这个无效，从Broker列表中剔除）
     private final HashMap<String/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
+    // key -> brokerAddr broker地址, value -> 服务端过滤方式，一个Broker 可以有多个Filter Server
     private final HashMap<String/* brokerAddr */, List<String>/* Filter Server */> filterServerTable;
 
     public RouteInfoManager() {

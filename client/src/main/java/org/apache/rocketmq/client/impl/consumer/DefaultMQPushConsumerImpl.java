@@ -201,6 +201,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
 
 
     public void pullMessage(final PullRequest pullRequest) {
+        // 获取还没有处理的消息的快照
         final ProcessQueue processQueue = pullRequest.getProcessQueue();
         if (processQueue.isDropped()) {
             log.info("the pull request[{}] is dropped.", pullRequest.toString());
@@ -224,7 +225,9 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             return;
         }
 
+        // 获取缓存的消息的数量
         long cachedMessageCount = processQueue.getMsgCount().get();
+        // 获取缓存的消息的大小
         long cachedMessageSizeInMiB = processQueue.getMsgSize().get() / (1024 * 1024);
 
         // 判断获取但未处理的消息个数，消息总大小，OFFset的跨度，任何一个值超过设定的大小，就隔一段时间  再拉取
@@ -266,6 +269,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 return;
             }
         } else {
+            // 辅助消费有序消费的逻辑
             // 有序消费需要获取 processQueue 锁
             if (processQueue.isLocked()) {
                 if (!pullRequest.isLockedFirst()) {
@@ -307,7 +311,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                             subscriptionData);
 
                     switch (pullResult.getPullStatus()) {
-                        // 获取新消息逻辑
+                        // 获取获取新消息逻辑
                         case FOUND:
                             long prevRequestOffset = pullRequest.getNextOffset();
                             pullRequest.setNextOffset(pullResult.getNextBeginOffset());
@@ -355,7 +359,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
 
                             break;
                         case NO_NEW_MSG:
-                            // 如果没有新消息，会走到这里
+                            // 处理没有新消息的逻辑
                             pullRequest.setNextOffset(pullResult.getNextBeginOffset());
 
                             DefaultMQPushConsumerImpl.this.correctTagsOffset(pullRequest);

@@ -591,7 +591,9 @@ public class MQClientAPIImpl {
             final long timeoutMillis,
             final PullCallback pullCallback
     ) throws RemotingException, InterruptedException {
-        // 请求broker，读取消息
+        // **核心** 请求broker，读取消息
+        // 一个topic 包含多个Message Queue 如果这个Consumer需要获取Topic下所有的消息，就需要便利所有的Message Queue
+        // 也可以选择某个特定的 MessageQueue
         this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() {
             // 回调函数
             @Override
