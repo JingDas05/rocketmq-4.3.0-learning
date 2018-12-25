@@ -157,6 +157,7 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
     @Override
     public void createAndUpdateTopicConfig(String addr, TopicConfig config) throws RemotingException, MQBrokerException,
         InterruptedException, MQClientException {
+        // 创建topic
         defaultMQAdminExtImpl.createAndUpdateTopicConfig(addr, config);
     }
 

@@ -49,6 +49,7 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 
 public class RouteInfoManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
+    // broker心跳时间2分钟
     private final static long BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     // 读写锁
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
@@ -436,6 +437,7 @@ public class RouteInfoManager {
         return null;
     }
 
+    // 如果时间戳超过2分钟则认为Broker已失效，移除掉怎么处理还没有消费的信息？
     public void scanNotActiveBroker() {
         Iterator<Entry<String, BrokerLiveInfo>> it = this.brokerLiveTable.entrySet().iterator();
         while (it.hasNext()) {
@@ -445,6 +447,7 @@ public class RouteInfoManager {
                 RemotingUtil.closeChannel(next.getValue().getChannel());
                 it.remove();
                 log.warn("The broker channel expired, {} {}ms", next.getKey(), BROKER_CHANNEL_EXPIRED_TIME);
+                // 关闭broker调用的方法
                 this.onChannelDestroy(next.getKey(), next.getValue().getChannel());
             }
         }
@@ -453,6 +456,7 @@ public class RouteInfoManager {
     public void onChannelDestroy(String remoteAddr, Channel channel) {
         // 获取 brokerAddrFound 以brokerLiveTable优先，其次为remoteAddr
         String brokerAddrFound = null;
+        // 首先尝试着读取brokerAddr地址
         if (channel != null) {
             try {
                 try {
@@ -542,7 +546,7 @@ public class RouteInfoManager {
                         }
                     }
 
-                    // 将topic中 channel包含broker的删除掉
+                    // 将topic中 channel包含broker的删除掉，假如断掉连接了，将master broker移除掉
                     if (removeBrokerName) {
                         Iterator<Entry<String, List<QueueData>>> itTopicQueueTable =
                                 this.topicQueueTable.entrySet().iterator();

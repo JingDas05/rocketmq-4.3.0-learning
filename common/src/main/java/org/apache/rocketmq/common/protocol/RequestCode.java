@@ -17,6 +17,7 @@
 
 package org.apache.rocketmq.common.protocol;
 
+// 定义请求Code
 public class RequestCode {
 
     public static final int SEND_MESSAGE = 10;

@@ -291,6 +291,7 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
     /**
      * 注册默认的 NettyRequestProcessor，在根据requestCode从processorTable没有获取到的情况下使用
+     * processor默认是 AdminBrokerProcessor
      */
     @Override
     public void registerDefaultProcessor(NettyRequestProcessor processor, ExecutorService executor) {

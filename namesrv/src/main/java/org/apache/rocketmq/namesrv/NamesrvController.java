@@ -92,6 +92,7 @@ public class NamesrvController {
         // 例如注册Broker或者新建Topic请求, 来更新RouteInfoManager路由信息
         this.registerProcessor();
 
+        // 每10秒检查一次Broker的状态，如果时间戳超过2分钟则认为Broker已失效
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -160,7 +161,7 @@ public class NamesrvController {
             this.remotingServer.registerDefaultProcessor(new ClusterTestRequestProcessor(this, namesrvConfig.getProductEnvName()),
                     this.remotingExecutor);
         } else {
-
+            // 注册默认消息处理器。DefaultRequestProcessor里有处理消息的核心逻辑
             this.remotingServer.registerDefaultProcessor(new DefaultRequestProcessor(this), this.remotingExecutor);
         }
     }
