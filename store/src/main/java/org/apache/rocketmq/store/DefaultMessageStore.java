@@ -148,8 +148,13 @@ public class DefaultMessageStore implements MessageStore {
         this.dispatcherList.addLast(new CommitLogDispatcherBuildConsumeQueue());
         this.dispatcherList.addLast(new CommitLogDispatcherBuildIndex());
 
+        // 初始化消息存储文件夹
+        // messageStoreConfig.getStorePathRootDir() -> C:\Users\${userName}\store
+        // lockFile -> C:\Users\${userName}\store\lock
         File file = new File(StorePathConfigHelper.getLockFile(messageStoreConfig.getStorePathRootDir()));
+        // 如果所在文件不存在，创建
         MappedFile.ensureDirOK(file.getParent());
+        // 获取 RandomAccessFile 对象
         lockFile = new RandomAccessFile(file, "rw");
     }
 
@@ -210,6 +215,7 @@ public class DefaultMessageStore implements MessageStore {
      */
     public void start() throws Exception {
 
+        // 获取文件锁
         lock = lockFile.getChannel().tryLock(0, 1, false);
         if (lock == null || lock.isShared() || !lock.isValid()) {
             throw new RuntimeException("Lock failed,MQ already started");
